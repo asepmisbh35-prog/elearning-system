@@ -57,8 +57,10 @@
     </div>
 
     {{-- ============ FORM CARD ============ --}}
-    <form method="POST" action="{{ route('guru.classes.store') }}"
-          class="bg-white rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm p-5 md:p-7 space-y-5">
+   <form method="POST" action="{{ route('guru.classes.store') }}"
+      x-data="{ loading: false }"
+      @submit="loading = true"
+      class="bg-white rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm p-5 md:p-7 space-y-5">
         @csrf
 
         {{-- Nama Kelas --}}
@@ -154,9 +156,7 @@
                 Batal
             </a>
             <button type="submit"
-                    x-data="{ loading: false }"
-                    @click="loading = true"
-                    :disabled="loading"
+        :disabled="loading"
                     class="relative px-6 py-2.5 bg-gradient-to-r from-[#4F46E5] to-[#4338CA] text-white rounded-xl text-sm font-medium
                            shadow-md shadow-indigo-200 hover:shadow-lg hover:shadow-indigo-300 hover:-translate-y-0.5
                            active:translate-y-0 transition-all duration-200 disabled:opacity-70 flex items-center gap-2">
