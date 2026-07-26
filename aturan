@@ -1,0 +1,316 @@
+# PANDUAN UI AKTUAL — E-LEARNING SYSTEM
+### Hasil Rombakan dari Rancangan_UI_Final_ELearning.md
+Dokumen ini adalah "aturan main" yang benar-benar dipakai di kode saat ini. Kalau ada perbedaan dengan `Rancangan_UI_Final_ELearning.md`, **dokumen ini yang jadi acuan**, karena sudah melalui iterasi nyata dan disetujui langsung di browser.
+
+---
+
+## 1. FILOSOFI WARNA
+
+**Base color tetap satu keluarga: Indigo.**
+
+| Token | Hex | Dipakai untuk |
+|---|---|---|
+| Primary | `#4F46E5` | CTA utama, teks aktif, ikon aktif |
+| Primary Light | `#818CF8` | Gradient partner, hover state |
+| Primary Dark | `#4338CA` / `#3730A3` | Hover CTA, gradient sidebar bagian bawah |
+| Success | `#10B981` | Progress bar, toast sukses, badge status aktif |
+| Danger | `#EF4444` | Delete, error, badge notifikasi (dot merah) |
+| Warning | `#F59E0B` | Deadline mendekat (belum banyak dipakai, tapi token-nya tetap ini) |
+
+**Aturan variasi warna per-card (khusus grid/list seperti Kelas Saya):**
+Boleh variasikan warna card (indigo, violet, sky, blue) untuk membedakan item secara visual — **tapi semua harus tetap di rumpun biru-ungu (cool tone)**. Jangan pakai teal, emerald, orange, atau warna hangat lain sebagai base card, karena itu akan pecah dari identitas sidebar/hero yang sudah Indigo penuh.
+
+❌ Dilarang: `teal-500`, `emerald-500`, `amber-500` sebagai warna dominan card/tombol
+✅ Boleh: `indigo-*`, `violet-*`, `sky-*`, `blue-*` sebagai variasi
+
+---
+
+## 2. SIDEBAR (Desktop & Tablet)
+
+- **Background:** gradient penuh, bukan putih flat.
+  - Guru & Siswa: `bg-gradient-to-b from-[#4F46E5] via-[#4338CA] to-[#3730A3]`
+  - Admin: varian lebih gelap `bg-gradient-to-b from-[#1E1B4B] via-[#0F172A] to-[#0F172A]`
+- **Motif dekorasi:** HANYA lingkaran blur transparan (`rounded-full bg-white opacity-[0.05–0.08] blur`), senada dengan hero card dashboard. **Jangan** pakai dot-grid pattern, garis lengkung/kontur, atau bentuk geometris rumit — sudah dicoba dan hasilnya terlalu ramai/kurang matching.
+- **Teks & ikon:** semua putih/indigo-terang (`text-white`, `text-indigo-100`, `text-indigo-300`) karena background gelap solid.
+- **Item menu aktif:** background `bg-white/15` + garis indikator vertikal putih 3px di kiri.
+- **Lebar:** 280px expanded, 72px collapsed (`w-[280px]` / `w-[72px]`).
+- **Badge notifikasi:** dot merah 8px di pojok ikon, border warna sesuai background sidebar.
+
+---
+
+## 3. BOTTOM NAVIGATION (Mobile, khusus role Siswa)
+
+- **Bentuk:** floating pill mengambang, bukan bar penuh menempel tepi layar.
+- **Posisi:** `fixed bottom-2 left-2 right-2` (margin dari tepi).
+- **Ukuran (final, sudah dikecilkan dari versi awal):**
+  - Tinggi bar: `h-14` (56px)
+  - Radius: `rounded-[20px]`
+  - Icon: `w-[18px] h-[18px]`
+  - Label: `text-[9px]`
+- **Item aktif:** dapat pill gradient Indigo (`from-[#4F46E5] to-[#818CF8]`) + shadow glow, icon & label jadi putih.
+- **Item nonaktif:** icon & label abu-abu `text-[#94A3B8]`.
+- **Konten halaman:** `<main>` wajib punya `pb-20 md:pb-6` untuk role Siswa supaya tidak ketutup bottom nav.
+- **PENTING — Route:** hanya pakai route yang **tidak butuh parameter** (`{class}` dsb). Saat ini yang valid: Dashboard, Kelas, Pesan, Profil. Kalau mau tambah Tugas/Nilai ke bottom nav, harus buat dulu controller agregat lintas-kelas (belum dibuat).
+- Setiap item WAJIB dibungkus `@continue(!Route::has($menu['route']))` supaya tidak crash kalau nama route berubah.
+
+---
+
+## 4. HERO HEADER (Dashboard & halaman list utama seperti "Kelas Saya")
+
+Setiap halaman index/dashboard utama sebaiknya punya hero card di bagian atas, bukan langsung heading polos:
+
+```blade
+<div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#4F46E5] via-[#4338CA] to-[#3730A3] p-8 text-white">
+    <div class="absolute -top-10 -right-10 w-56 h-56 rounded-full bg-white opacity-[0.08]"></div>
+    <div class="absolute bottom-0 left-1/3 w-64 h-64 rounded-full bg-white opacity-[0.06] translate-y-1/2"></div>
+    <div class="absolute top-1/2 -left-16 w-40 h-40 rounded-full bg-white opacity-[0.07]"></div>
+    {{-- konten: judul + subjudul + CTA --}}
+</div>
+```
+
+Ini menjaga semua halaman utama punya "identitas" yang sama dengan dashboard siswa yang sudah ada.
+
+---
+
+## 5. CARD KOMPONEN (course-card, dsb.)
+
+- Cover berwarna penuh di bagian atas card (bukan cuma garis tipis 1-2px), dengan avatar/inisial yang overlap turun ke body card.
+- Progress bar pakai warna Success (`#10B981`) — hijau, bukan warna lain.
+- Badge status "Aktif" pakai dot + background pastel (`bg-emerald-50 text-emerald-600`).
+- Hover state: `-translate-y-1`, `shadow-xl shadow-indigo-200/60`, plus `ring-2` warna senada card.
+
+---
+
+## 6. RESPONSIVE — WAJIB PAKAI BREAKPOINT BERTINGKAT
+
+Semua ukuran (padding, font, icon, radius) **harus punya dua nilai**: mobile default + `md:` untuk desktop. Jangan pakai satu ukuran fixed untuk semua device — ini sudah jadi masalah di halaman "Bergabung ke Kelas" sebelumnya.
+
+Pola standar:
+```
+padding:  p-5 md:p-7
+radius:   rounded-2xl md:rounded-3xl
+font:     text-sm md:text-base  |  text-lg md:text-2xl (untuk elemen besar)
+icon:     w-12 h-12 md:w-16 md:h-16
+```
+
+---
+
+## 7. HAL YANG SUDAH DICOBA DAN DITOLAK (supaya tidak diulang)
+
+| Yang dicoba | Hasil | Alasan ditolak |
+|---|---|---|
+| Sidebar putih polos + aksen indigo tipis | Ditolak | "Kepolosan" — kurang menarik |
+| Motif dot-grid + garis lengkung kontur | Ditolak | Terlalu ramai, tidak match hero card |
+| Sidebar 3 warna beda per role (biru/teal/indigo) | Ditolak | Melanggar prinsip "1 warna CTA konsisten" dari spec asli |
+| Bottom nav ukuran besar (h-[68px], icon 24px) | Ditolak | Kegedean untuk layar mobile sempit |
+| Card warna teal/emerald/violet campur bebas | Ditolak | Keluar dari keluarga warna Indigo, bentrok sidebar |
+
+---
+
+## 8. CHECKLIST SEBELUM MENGANGGAP HALAMAN "SELESAI"
+
+Setiap kali membuat/edit halaman baru, cek:
+
+- [ ] Semua warna base (CTA, ikon aktif, teks link) pakai `#4F46E5` / turunannya — tidak ada teal/emerald/orange sebagai warna dominan
+- [ ] Kalau ada elemen dekoratif, pakai lingkaran blur transparan (bukan dot-grid/garis kontur)
+- [ ] Ada breakpoint `md:` untuk padding, font, icon, radius
+- [ ] Kalau halaman dashboard/index utama → ada hero card gradient Indigo di atas
+- [ ] Kalau ada card grid → warna variasi tetap di rumpun indigo/violet/sky/blue
+- [ ] Progress bar selalu hijau (`#10B981`), bukan warna lain
+- [ ] Error/danger pakai `#EF4444`, success pakai `#10B981` — bukan `red-*`/`green-*` generik Tailwind
+- [ ] Kalau ada link ke route dengan parameter dinamis, JANGAN taruh di bottom nav Siswa tanpa controller agregat dulu
+
+---
+
+## 9. FILE REFERENSI YANG SUDAH DIROMBAK
+
+Sebagai contoh konkret pola di atas, jadikan file berikut sebagai referensi "sudah benar":
+- `layouts/app.blade.php` — sidebar gradient + bottom nav pill
+- `siswa/classes/index.blade.php` — hero card + summary stat + course card
+- `siswa/classes/join.blade.php` — form dengan responsive breakpoint lengkap
+
+Kalau ragu bagaimana menstyle halaman baru, buka salah satu file ini sebagai pola dasar, lalu sesuaikan kontennya.
+
+# TAMBAHAN PANDUAN UI AKTUAL — v2
+### Sisipkan sebagai lanjutan dari `PANDUAN_UI_AKTUAL_ELearning.md` (setelah bagian 9)
+Bagian ini mengunci pola-pola baru yang sudah disetujui langsung di halaman "Detail Kelas" dan wajib dipakai ulang di halaman lain yang punya kebutuhan serupa (index/dashboard dengan menu banyak, tabel dengan aksi input/edit per sel, dsb).
+
+---
+
+## 10. IKON — SVG WAJIB, EMOJI DILARANG
+
+Semua ikon di tombol, badge, atau card **harus SVG outline** (Heroicons-style, `stroke-width="2"`), **tidak boleh emoji** (📊 📄 ↻ 📱 dsb). Alasan: emoji render beda-beda tiap OS/browser dan nggak bisa diwarnai sesuai token Indigo.
+
+❌ `📊 Excel` `📄 PDF` `↻ Hitung Ulang`
+✅ `<svg>...</svg> Excel` dengan warna ikon senada tombol
+
+---
+
+## 11. KONFIRMASI AKSI DESTRUKTIF — MODAL CUSTOM, BUKAN `confirm()`
+
+Semua aksi yang menghapus/mereset/mengeluarkan data (reset kode, hapus siswa, hapus nilai, dst) **wajib pakai modal custom Alpine.js**, bukan `onclick="return confirm(...)"` bawaan browser.
+
+Pola modal baku (copy dari halaman QR Code & Detail Kelas):
+```blade
+<div x-show="confirmSomething" x-cloak
+     class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="confirmSomething = false"></div>
+    <div class="relative bg-white rounded-2xl md:rounded-3xl p-6 max-w-sm w-full shadow-xl"
+         x-transition:enter="transition ease-out duration-250" x-transition:enter-start="opacity-0 scale-90" x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-90">
+        <div class="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-[#EF4444]" ...></svg>
+        </div>
+        <h3 class="text-base font-semibold text-gray-900 mb-1.5">Judul Konfirmasi?</h3>
+        <p class="text-sm text-gray-500 mb-5">Penjelasan konsekuensi aksi ini.</p>
+        <div class="flex gap-3">
+            <button @click="confirmSomething = false" class="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50">Batal</button>
+            <button class="flex-1 px-4 py-2.5 bg-[#EF4444] hover:bg-red-600 text-white rounded-xl text-sm font-medium">Ya, Lanjutkan</button>
+        </div>
+    </div>
+</div>
+```
+Kalau aksinya dipakai berulang di banyak baris (misal hapus per-baris tabel), **satu modal dipakai ulang untuk semua baris** — simpan referensi form/data target di state Alpine (`x-data`), jangan bikin modal per baris.
+
+---
+
+## 12. FEATURED / BENTO CARD — untuk item yang lebih penting dari yang lain
+
+Kalau dalam satu grup menu/aksi ada satu item yang levelnya beda (lebih sering dipakai, atau butuh konteks tambahan seperti angka/status), **jangan paksa masuk grid seragam**. Angkat jadi featured card full-width di atas grup, dengan:
+- Ikon lebih besar (`w-16 h-16` / `70px`), background gradient solid (bukan wash pastel).
+- Elemen animasi yang **terus berjalan** (bukan cuma sekali saat load) — contoh: `animate-ping` pada ring di belakang ikon, dengan `animation-duration` custom biar nggak terlalu heboh (2.5s–3s).
+- Statistik terkait ditempel sebagai **chip kecil di dalam card yang sama** (bukan kotak statistik terpisah), format: `bg-white border rounded-lg px-2.5 py-1 text-xs font-semibold`.
+
+---
+
+## 13. CAROUSEL SCROLL-SNAP — pengganti grid kaku di mobile untuk daftar menu >4 item
+
+Kalau jumlah item menu cukup banyak (5+) dan berisiko wrap jelek di mobile, pakai carousel horizontal, otomatis balik ke grid di `sm:` ke atas:
+
+```blade
+<div class="-mx-4 sm:mx-0 px-4 sm:px-0">
+    <div class="flex sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 overflow-x-auto sm:overflow-visible snap-x snap-mandatory pb-1 sm:pb-0 scrollbar-none">
+        {{-- item: shrink-0 w-[42vw] sm:w-auto snap-start --}}
+    </div>
+    <div class="flex sm:hidden justify-center gap-1 mt-2">
+        {{-- dot indikator, w-1.5 h-1.5 rounded-full bg-indigo-200 --}}
+    </div>
+</div>
+```
+Wajib tambahkan utility berikut di `<style>` halaman (bukan bawaan Tailwind core):
+```css
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+```
+
+---
+
+## 14. TABEL DENGAN SEL YANG BISA DIKLIK (input nilai, dsb.)
+
+- Sel yang bisa diklik untuk buka modal input: beri `hover:bg-indigo-50 rounded-lg transition-colors duration-150` supaya terasa interaktif, bukan cuma teks biasa.
+- Kolom "hasil akhir/rekap" (kolom yang dihitung otomatis) pakai wash `bg-indigo-50` sebagai penanda visual, dengan teks Success/Danger (`#10B981` / `#EF4444`) tergantung status lulus/tidak — **bukan** `text-green-700` / `text-red-600` generik Tailwind.
+- Badge predikat pakai pastel: `bg-emerald-50 text-emerald-600` (lulus) / `bg-red-50 text-[#EF4444]` (belum).
+- Baris tabel: `hover:bg-indigo-50/40 transition-colors duration-150` — jangan `hover:bg-gray-50` generik.
+- Header tabel: `bg-indigo-50/60`, teks `text-[#4338CA]`.
+
+---
+
+## 15. CHECKLIST TAMBAHAN
+
+- [ ] Tidak ada emoji sebagai ikon — semua SVG
+- [ ] Aksi destruktif pakai modal custom, bukan `confirm()`
+- [ ] Kalau ada item "lebih penting" di grup menu → jadi featured card, bukan dipaksa masuk grid rata
+- [ ] Menu >4 item di mobile → pertimbangkan carousel scroll-snap, bukan grid yang wrap jelek
+- [ ] Tabel interaktif pakai warna token Indigo (bukan `green-*`/`red-*`/`teal-*` generik Tailwind)
+- [ ] Tombol submit form yang mungkin lama (export, hitung ulang, simpan) punya loading state (`x-data="{loading:false}"` + spinner)
+
+
+# TAMBAHAN PANDUAN UI AKTUAL — v3
+### Sisipkan sebagai lanjutan dari v2 (setelah bagian 15)
+Mulai sekarang, SETIAP kali diberi kode halaman untuk dirombak, langsung terapkan seluruh bagian ini tanpa perlu diminta ulang. Tidak perlu bertanya "mau dianimasikan atau tidak" — jawabannya selalu YA. Cukup diberi kode, langsung eksekusi penuh sesuai pola di bawah.
+
+---
+
+## 16. ATURAN WAJIB: SETIAP HALAMAN HARUS PUNYA ANIMASI & IDENTITAS KREATIF
+
+Halaman yang cuma ganti warna doang (tanpa animasi/interaksi baru) dianggap BELUM SELESAI. Setiap rombakan wajib mengandung minimal:
+
+1. **Entrance animation** — elemen utama (card, baris list, hero) pakai `rise-in` (fade+translateY) dengan stagger delay per index (`animation-delay: {{ $i * 60-80 }}ms`).
+2. **Minimal 1 elemen dengan animasi hidup/berjalan terus** di area yang paling sering dilihat (hero/featured card) — contoh: `animate-ping` ring, `soft-pulse`, count-up angka, atau donut/ring yang "digambar" saat load.
+3. **Micro-interaction di elemen interaktif** — hover `-translate-y-0.5` + shadow warna senada pada card, `hover:scale-110 active:scale-95` pada icon button, toggle/switch dengan transisi `translate-x`, panah yang geser (`group-hover:translate-x-0.5`) pada link.
+4. **Loading state pada form/tombol yang memanggil server** — spinner SVG + teks berubah (`x-text="saving ? 'Menyimpan...' : 'Simpan'"`), tombol `disabled` saat proses berjalan.
+
+Standar snippet CSS wajib ada di `<style>` tiap halaman yang dirombak:
+```css
+@keyframes rise-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.rise-in { animation: rise-in .5s cubic-bezier(.16,1,.3,1) both; }
+[x-cloak] { display: none !important; }
+```
+
+---
+
+## 17. JANGAN CUMA GANTI WARNA — CARI BENTUK VISUAL YANG PALING PAS DENGAN DATA
+
+Sebelum ngoding, tanya ke diri sendiri: "data di halaman ini bentuknya apa — daftar berurutan? komposisi/proporsi? progres? perbandingan?" — lalu pilih representasi visual yang sesuai, bukan default list/bar terus-terusan:
+
+| Bentuk data | Representasi yang dipakai |
+|---|---|
+| Data berurutan/bertahap (materi, langkah, pertemuan) | Timeline vertikal: badge nomor terhubung garis (`grow-line`) |
+| Proporsi/komposisi dari beberapa bagian (bobot komponen nilai) | Donut chart animasi (segmen digambar bertahap, warna beda tiap bagian) |
+| Progres tunggal (rata-rata, KKM, capaian) | Radial ring / gauge dengan count-up angka |
+| Salah satu item lebih penting dari yang lain | Featured/bento card terpisah dengan ring `animate-ping` |
+| Daftar kategori/tipe yang bisa dipilih (tipe blok konten, filter) | Icon card grid/carousel, bukan pill teks polos |
+| Ringkasan angka di hero (jumlah, menit, dst) | Chip stat count-up di dalam hero, bukan card statistik terpisah |
+
+Ini bukan daftar tertutup — kalau ada bentuk data baru yang belum tercakup, cari padanan visual paling representatif sendiri, tetap dalam batas token warna & filosofi di bagian 1.
+
+---
+
+## 18. WARNA PER-KATEGORI (tipe konten, komponen, dsb.) — PALET BAKU
+
+Kalau ada beberapa kategori/tipe yang perlu dibedakan warnanya dalam satu halaman (tipe blok materi, komponen penilaian, badge kelas), pakai palet bergilir baku ini — SELALU urutan yang sama supaya konsisten lintas halaman:
+
+```php
+$palette = [
+    ['ring' => '#4F46E5', 'soft' => 'bg-indigo-50', 'text' => 'text-[#4F46E5]', 'shadow' => 'shadow-indigo-200/60'], // 1. Indigo
+    ['ring' => '#7C3AED', 'soft' => 'bg-violet-50', 'text' => 'text-violet-600', 'shadow' => 'shadow-violet-200/60'], // 2. Violet
+    ['ring' => '#0EA5E9', 'soft' => 'bg-sky-50',    'text' => 'text-sky-600',    'shadow' => 'shadow-sky-200/60'],    // 3. Sky
+    ['ring' => '#3B82F6', 'soft' => 'bg-blue-50',   'text' => 'text-blue-600',   'shadow' => 'shadow-blue-200/60'],  // 4. Blue
+];
+```
+Dipakai dengan `$palette[$i % 4]`. Kalau kategorinya punya makna semantik tetap (mis. tipe blok "Teks"/"Video"/"PDF"/"Link"), boleh dipetakan manual per tipe (bukan `% 4` dari index array) — asal tetap 4 warna ini dan urutannya konsisten di semua halaman yang menampilkan tipe yang sama (lihat bagian 19).
+
+---
+
+## 19. KONSISTENSI LINTAS HALAMAN — WARNA TIPE KONTEN SUDAH DIKUNCI
+
+Supaya user tidak bingung pindah halaman, mapping warna berikut untuk tipe blok konten materi SUDAH FINAL dan wajib dipakai ulang di semua halaman terkait (index, show/preview, edit, create):
+
+| Tipe | Warna | Ikon (path Heroicons) |
+|---|---|---|
+| Teks | Indigo `#4F46E5` | garis horizontal (list) |
+| Video | Violet `#7C3AED` | play/film |
+| PDF Viewer | Sky `#0EA5E9` | dokumen |
+| PDF Flipbook | Blue `#3B82F6` | buku terbuka |
+| Link | Indigo tua `#4338CA` | rantai/link |
+
+Status flipbook juga sudah baku: `pending` = amber `#F59E0B`, `processing` = indigo `#4F46E5` (dengan dot `soft-pulse`), `ready` = emerald `#10B981`, `failed` = merah `#EF4444`.
+
+Kalau nanti ada tipe konten baru, tambahkan di tabel ini (jangan generate warna baru asal pilih) — lanjutkan pola indigo/violet/sky/blue, kalau ke-5 warna dari bagian 18 sudah habis, boleh pakai variasi shade lebih terang/gelap dari 4 warna itu (`indigo-400`, `sky-700`, dst), tetap bukan warna hangat.
+
+---
+
+## 20. CHECKLIST TAMBAHAN — WAJIB DICEK SEBELUM DIANGGAP SELESAI
+
+- [ ] Ada minimal satu animasi entrance (`rise-in` staggered) di elemen list/card utama
+- [ ] Ada minimal satu elemen dengan animasi hidup (ping/pulse/count-up/draw-in), bukan cuma static gradient
+- [ ] Hover state card/tombol terasa (translate + shadow warna, bukan cuma ganti warna background)
+- [ ] Tombol yang submit ke server punya loading state (spinner + teks berubah)
+- [ ] Representasi visual sudah dipilih sesuai bentuk data (lihat tabel bagian 17), bukan asal pasang list/card generik
+- [ ] Kalau halaman ini menampilkan tipe konten yang sudah dipetakan di bagian 19 (blok materi), warnanya SAMA PERSIS dengan halaman lain yang sudah ada — tidak reinvent warna baru
+- [ ] Semua item di checklist v1 & v2 (bagian 8 & 15) tetap berlaku: SVG only, modal custom untuk aksi destruktif, breakpoint `md:`, token warna Indigo/Success/Danger yang benar

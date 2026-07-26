@@ -1,0 +1,1 @@
+Schedule::command('reminders:send')->everyFiveMinutes();
