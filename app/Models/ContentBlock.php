@@ -119,7 +119,7 @@ class ContentBlock extends Model
 
     public static function countPdfPagesViaGhostscript(string $absolutePdfPath): int
     {
-        $ghostscriptBin = 'gswin64c';
+        $ghostscriptBin = PHP_OS_FAMILY === 'Windows' ? 'gswin64c' : 'gs';
 
         $psScript = sprintf(
             '(%s) (r) file runpdfbegin pdfpagecount = quit',
