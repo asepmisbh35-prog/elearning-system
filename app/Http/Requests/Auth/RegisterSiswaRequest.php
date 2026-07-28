@@ -8,6 +8,11 @@ use Illuminate\Validation\Rules\Password;
 
 class RegisterSiswaRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
         return [
@@ -42,7 +47,7 @@ class RegisterSiswaRequest extends FormRequest
         $validator->after(function ($validator) {
             $student = Student::where('nisn', $this->nisn)->first();
 
-            if ($student && $student->has_registered) {
+            if ($student && $student->is_registered) {
                 $validator->errors()->add('nisn', 'NISN ini sudah terdaftar. Silakan login.');
             }
         });

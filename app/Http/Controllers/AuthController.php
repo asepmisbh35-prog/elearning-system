@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use App\Http\Requests\Auth\RegisterSiswaRequest;
+
 
 class AuthController extends Controller
 {
@@ -68,10 +70,8 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
-    // Proses registrasi siswa
-    public function register(\App\Http\Requests\RegisterSiswaRequest $request)
+    public function register(RegisterSiswaRequest $request)
     {
-        // Cari data pre-registered berdasarkan NISN
         $student = \App\Models\Student::where('nisn', $request->nisn)
             ->where('is_registered', false)
             ->whereNull('user_id')
@@ -83,25 +83,24 @@ class AuthController extends Controller
             ])->withInput($request->except('password', 'password_confirmation'));
         }
 
-        // Validasi nama (case-insensitive, toleransi spasi)
-        $namaInput    = strtolower(trim($request->nama_lengkap));
+        // Validasi nama (case-insensitive, toleransi spasi & typo minimal)
+        $namaInput     = strtolower(trim($request->name));
         $namaTerdaftar = strtolower(trim($student->nama_lengkap));
 
-        // Hitung similarity untuk toleransi typo minimal
         similar_text($namaInput, $namaTerdaftar, $percent);
 
         if ($percent < 80) {
             return back()->withErrors([
-                'nama_lengkap' => 'Nama tidak sesuai data. Hubungi admin untuk klarifikasi.',
+                'name' => 'Nama tidak sesuai data. Hubungi admin untuk klarifikasi.',
             ])->withInput($request->except('password', 'password_confirmation'));
         }
 
         // Buat akun user
         $user = \App\Models\User::create([
-            'name'     => $student->nama_lengkap,
-            'email'    => $request->email,
-            'password' => $request->password,
-            'role'     => 'siswa',
+            'name'      => $student->nama_lengkap,
+            'email'     => $request->email,
+            'password'  => bcrypt($request->password),
+            'role'      => 'siswa',
             'is_active' => true,
         ]);
 
@@ -109,7 +108,6 @@ class AuthController extends Controller
         $student->update([
             'user_id'       => $user->id,
             'birth_date'    => $request->birth_date,
-            'address'       => $request->address,
             'is_registered' => true,
         ]);
 
