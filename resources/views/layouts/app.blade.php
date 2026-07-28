@@ -220,11 +220,47 @@
             <div class="flex items-center gap-3 md:gap-4 flex-shrink-0">
                 <x-notification-badge />
 
-                <a href="{{ route('profile.show') }}" title="Profil Saya" class="flex-shrink-0">
-                    <img src="{{ $avatarUrl }}"
-                        alt="Foto {{ auth()->user()->name }}"
-                        class="w-8 h-8 rounded-full object-cover border-2 border-[#E2E8F0] hover:border-[#4F46E5] transition">
-                </a>
+                {{-- ══ Dropdown Akun (Profil + Keluar) — satu-satunya akses logout untuk siswa di mobile ══ --}}
+                <div class="relative flex-shrink-0" x-data="{ userMenuOpen: false }" @click.away="userMenuOpen = false">
+                    <button @click="userMenuOpen = !userMenuOpen" title="Menu Akun" type="button" class="flex items-center gap-1.5">
+                        <img src="{{ $avatarUrl }}"
+                            alt="Foto {{ auth()->user()->name }}"
+                            class="w-8 h-8 rounded-full object-cover border-2 border-[#E2E8F0] hover:border-[#4F46E5] transition">
+                        <svg class="w-3.5 h-3.5 text-[#94A3B8] transition-transform" :class="userMenuOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    <div x-show="userMenuOpen"
+                         x-transition
+                         class="absolute right-0 top-full mt-2 w-56 bg-white rounded-[16px] shadow-xl shadow-slate-900/10 border border-[#E2E8F0] py-2 z-50 overflow-hidden"
+                         style="display: none;">
+                        <div class="px-4 py-3 border-b border-[#E2E8F0]">
+                            <p class="text-sm font-semibold text-[#0F172A] truncate">{{ auth()->user()->name }}</p>
+                            <p class="text-xs text-[#94A3B8]">{{ $roleLabel[$role] ?? '' }}</p>
+                        </div>
+
+                        <a href="{{ route('profile.show') }}"
+                           @click="userMenuOpen = false"
+                           class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#334155] hover:bg-[#EEF2FF] hover:text-[#4F46E5] transition">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            Profil Saya
+                        </a>
+
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit"
+                                    class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#EF4444] hover:bg-[#FEF2F2] transition">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                </svg>
+                                Keluar
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </header>
 
