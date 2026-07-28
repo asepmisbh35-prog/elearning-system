@@ -72,7 +72,8 @@ class AuthController extends Controller
 
 
     // Proses registrasi siswa
-    public function register(RegisterSiswaRequest $request)
+    // Proses registrasi siswa
+    public function register(\App\Http\Requests\Auth\RegisterSiswaRequest $request)
     {
         $user = \App\Models\User::create([
             'name'      => $request->name,
@@ -89,11 +90,9 @@ class AuthController extends Controller
             'birth_date'   => $request->birth_date,
         ]);
 
-        $user->sendEmailVerificationNotification();
-
         return redirect()->route('login')->with(
             'success',
-            'Registrasi berhasil! Cek email kamu untuk verifikasi akun sebelum login.'
+            'Registrasi berhasil! Silakan login.'
         );
     }
 
