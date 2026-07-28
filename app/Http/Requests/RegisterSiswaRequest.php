@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Auth;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-
+use Illuminate\Validation\Rules\Password;
 
 class RegisterSiswaRequest extends FormRequest
 {
@@ -16,28 +15,29 @@ class RegisterSiswaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nama_lengkap' => ['required', 'string', 'max:255'],
-            'nisn'         => ['required', 'string', 'size:10'],
-            'birth_date'   => ['required', 'date', 'before:today'],
-            'email'        => ['required', 'email', 'unique:users,email'],
-            'password'     => ['required', 'string', 'min:8', 'confirmed'],
-            'address'      => ['nullable', 'string', 'max:500'],
+            'name'       => ['required', 'string', 'max:255'],
+            'nisn'       => ['required', 'string', 'digits:10', 'unique:students,nisn'],
+            'birth_date' => ['required', 'date', 'before:today'],
+            'email'      => ['required', 'email', 'unique:users,email', 'max:255'],
+            'password'   => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
-            'nisn.required'         => 'NISN wajib diisi.',
-            'nisn.size'             => 'NISN harus tepat 10 digit.',
-            'birth_date.required'   => 'Tanggal lahir wajib diisi.',
-            'birth_date.before'     => 'Tanggal lahir tidak valid.',
-            'email.required'        => 'Email wajib diisi.',
-            'email.unique'          => 'Email sudah digunakan.',
-            'password.min'          => 'Password minimal 8 karakter.',
-            'password.confirmed'    => 'Konfirmasi password tidak cocok.',
+            'name.required'       => 'Nama lengkap wajib diisi.',
+            'nisn.required'       => 'NISN wajib diisi.',
+            'nisn.digits'         => 'NISN harus berupa 10 digit angka.',
+            'nisn.unique'         => 'NISN ini sudah terdaftar. Silakan login.',
+            'birth_date.required' => 'Tanggal lahir wajib diisi.',
+            'birth_date.before'   => 'Tanggal lahir tidak valid.',
+            'email.required'      => 'Email wajib diisi.',
+            'email.email'         => 'Format email tidak valid.',
+            'email.unique'        => 'Email sudah digunakan oleh akun lain.',
+            'password.required'   => 'Password wajib diisi.',
+            'password.confirmed'  => 'Konfirmasi password tidak cocok.',
+            'password.min'        => 'Password minimal 8 karakter.',
         ];
     }
 }
-

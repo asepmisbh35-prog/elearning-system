@@ -70,48 +70,25 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
+
+    // Proses registrasi siswa
     public function register(RegisterSiswaRequest $request)
     {
-        $student = \App\Models\Student::where('nisn', $request->nisn)
-            ->where('is_registered', false)
-            ->whereNull('user_id')
-            ->first();
-
-        if (! $student) {
-            return back()->withErrors([
-                'nisn' => 'NISN tidak ditemukan atau sudah terdaftar. Hubungi admin.',
-            ])->withInput($request->except('password', 'password_confirmation'));
-        }
-
-        // Validasi nama (case-insensitive, toleransi spasi & typo minimal)
-        $namaInput     = strtolower(trim($request->name));
-        $namaTerdaftar = strtolower(trim($student->nama_lengkap));
-
-        similar_text($namaInput, $namaTerdaftar, $percent);
-
-        if ($percent < 80) {
-            return back()->withErrors([
-                'name' => 'Nama tidak sesuai data. Hubungi admin untuk klarifikasi.',
-            ])->withInput($request->except('password', 'password_confirmation'));
-        }
-
-        // Buat akun user
         $user = \App\Models\User::create([
-            'name'      => $student->nama_lengkap,
+            'name'      => $request->name,
             'email'     => $request->email,
             'password'  => bcrypt($request->password),
             'role'      => 'siswa',
             'is_active' => true,
         ]);
 
-        // Update data student
-        $student->update([
-            'user_id'       => $user->id,
-            'birth_date'    => $request->birth_date,
-            'is_registered' => true,
+        \App\Models\Student::create([
+            'user_id'      => $user->id,
+            'nisn'         => $request->nisn,
+            'nama_lengkap' => $request->name,
+            'birth_date'   => $request->birth_date,
         ]);
 
-        // Kirim email verifikasi
         $user->sendEmailVerificationNotification();
 
         return redirect()->route('login')->with(
