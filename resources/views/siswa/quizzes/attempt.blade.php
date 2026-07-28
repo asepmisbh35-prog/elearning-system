@@ -245,38 +245,62 @@
                                     ->values();
                             @endphp
                             <div x-data="{
+                                    qid: {{ $question->id }},
                                     items: @js($initialItems),
                                     dragIndex: null,
-                                    dragStart(i) { this.dragIndex = i; },
-                                    drop(i) {
-                                        if (this.dragIndex === null || this.dragIndex === i) return;
-                                        const moved = this.items.splice(this.dragIndex, 1)[0];
-                                        this.items.splice(i, 0, moved);
-                                        this.dragIndex = null;
-                                        this.emit();
-                                    },
+                                    ghostText: '', ghostX: 0, ghostY: 0,
+                                    hoverIndex: null,
                                     move(i, dir) {
                                         const j = i + dir;
                                         if (j < 0 || j >= this.items.length) return;
                                         [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
                                         this.emit();
                                     },
-                                    emit() {
-                                        saveAnswer({{ $question->id }}, { order: this.items.map(it => it.id) });
-                                    }
+                                    emit() { saveAnswer(this.qid, { order: this.items.map(it => it.id) }); },
+
+                                    startDrag(e, i) {
+                                        e.preventDefault();
+                                        this.dragIndex = i;
+                                        this.ghostText = this.items[i].text;
+                                        this.ghostX = e.clientX;
+                                        this.ghostY = e.clientY;
+                                        e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
+                                    },
+                                    onMove(e) {
+                                        if (this.dragIndex === null) return;
+                                        this.ghostX = e.clientX;
+                                        this.ghostY = e.clientY;
+                                        const el = document.elementFromPoint(e.clientX, e.clientY);
+                                        const row = el ? el.closest(`[data-sortrow-qid='${this.qid}']`) : null;
+                                        this.hoverIndex = row ? parseInt(row.dataset.rowIndex) : null;
+                                    },
+                                    endDrag() {
+                                        if (this.dragIndex === null) return;
+                                        if (this.hoverIndex !== null && this.hoverIndex !== this.dragIndex) {
+                                            const moved = this.items.splice(this.dragIndex, 1)[0];
+                                            this.items.splice(this.hoverIndex, 0, moved);
+                                            this.emit();
+                                        }
+                                        this.dragIndex = null;
+                                        this.hoverIndex = null;
+                                        this.ghostText = '';
+                                    },
                                 }"
-                                class="space-y-2">
+                                @pointermove.window="onMove($event)"
+                                @pointerup.window="endDrag()"
+                                @pointercancel.window="endDrag()"
+                                class="space-y-2 relative">
                                 <p class="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-3 flex items-center gap-1.5 font-medium">
                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
                                     Seret untuk mengurutkan, atau pakai tombol panah
                                 </p>
                                 <template x-for="(item, i) in items" :key="item.id">
-                                    <div class="flex items-center gap-3 bg-white border-2 border-amber-100 rounded-xl px-3 py-3 cursor-move hover:border-amber-300 hover:shadow-md transition-all duration-200"
-                                         draggable="true"
-                                         @dragstart="dragStart(i)"
-                                         @dragover.prevent
-                                         @drop.prevent="drop(i)">
-                                        <svg class="w-4 h-4 text-amber-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+                                    <div class="flex items-center gap-3 bg-white border-2 rounded-xl px-3 py-3 hover:border-amber-300 hover:shadow-md transition-all duration-200 select-none"
+                                         data-sortrow-qid="{{ $question->id }}"
+                                         :data-row-index="i"
+                                         :class="hoverIndex === i ? 'border-amber-400 bg-amber-50 scale-[1.02]' : 'border-amber-100'"
+                                         :style="dragIndex === i ? 'opacity: 0.3' : ''">
+                                        <svg class="w-4 h-4 text-amber-300 shrink-0 cursor-move" style="touch-action: none;" @pointerdown="startDrag($event, i)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
                                         <span class="w-7 h-7 rounded-full bg-gradient-to-br from-[#D97706] to-[#FBBF24] text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm" x-text="i + 1"></span>
                                         <span class="flex-1 text-sm text-gray-700 font-medium" x-text="item.text"></span>
                                         <div class="flex flex-col gap-0.5 shrink-0">
@@ -289,8 +313,14 @@
                                         </div>
                                     </div>
                                 </template>
-                            </div>
 
+                                <template x-if="dragIndex !== null && ghostText">
+                                    <div class="fixed z-50 pointer-events-none bg-gradient-to-br from-[#D97706] to-[#FBBF24] text-white rounded-xl px-4 py-3 text-sm font-semibold shadow-xl"
+                                         :style="`left: ${ghostX + 12}px; top: ${ghostY - 28}px;`"
+                                         x-text="ghostText"></div>
+                                </template>
+                            </div>
+                            
                         @elseif ($question->type === 'fill_blank')
                             @php
                                 $segments = explode('___', $question->question_text);
@@ -408,28 +438,49 @@
                                 $rightItemsShuffled = collect($pairs)->values()->map(fn($p, $i) => ['index' => $i, 'text' => $p['right']])->shuffle()->values();
                             @endphp
                             <div x-data="{
+                                    qid: {{ $question->id }},
                                     matches: @js((object) $existingMatches),
                                     rightItems: @js($rightItemsShuffled),
                                     dragging: null,
-                                    dragStart(rightIndex) { this.dragging = rightIndex; },
-                                    dropOn(leftIndex) {
-                                        if (this.dragging === null) return;
-                                        this.matches[leftIndex] = this.dragging;
-                                        this.dragging = null;
-                                        this.emit();
-                                    },
-                                    clear(leftIndex) {
-                                        delete this.matches[leftIndex];
-                                        this.emit();
-                                    },
+                                    dragText: '',
+                                    ghostX: 0, ghostY: 0,
+                                    hoverLeft: null,
                                     usedRightIndexes() { return Object.values(this.matches); },
-                                    rightTextFor(rightIndex) {
-                                        const item = this.rightItems.find(r => r.index === rightIndex);
-                                        return item ? item.text : '';
+                                    rightTextFor(i) { const it = this.rightItems.find(r => r.index === i); return it ? it.text : ''; },
+                                    clear(leftIndex) { delete this.matches[leftIndex]; this.emit(); },
+                                    emit() { saveAnswer(this.qid, { matches: this.matches }); },
+
+                                    startDrag(e, rightIndex, text) {
+                                        e.preventDefault();
+                                        this.dragging = rightIndex;
+                                        this.dragText = text;
+                                        this.ghostX = e.clientX;
+                                        this.ghostY = e.clientY;
+                                        e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
                                     },
-                                    emit() { saveAnswer({{ $question->id }}, { matches: this.matches }); }
+                                    onMove(e) {
+                                        if (this.dragging === null) return;
+                                        this.ghostX = e.clientX;
+                                        this.ghostY = e.clientY;
+                                        const el = document.elementFromPoint(e.clientX, e.clientY);
+                                        const zone = el ? el.closest(`[data-dropzone-qid='${this.qid}']`) : null;
+                                        this.hoverLeft = zone ? parseInt(zone.dataset.leftIndex) : null;
+                                    },
+                                    endDrag() {
+                                        if (this.dragging === null) return;
+                                        if (this.hoverLeft !== null) {
+                                            this.matches[this.hoverLeft] = this.dragging;
+                                            this.emit();
+                                        }
+                                        this.dragging = null;
+                                        this.hoverLeft = null;
+                                        this.dragText = '';
+                                    },
                                 }"
-                                class="space-y-4">
+                                @pointermove.window="onMove($event)"
+                                @pointerup.window="endDrag()"
+                                @pointercancel.window="endDrag()"
+                                class="space-y-4 relative">
                                 <p class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 flex items-center gap-1.5 font-medium">
                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.5-1.5M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.5 1.5"/></svg>
                                     Seret kartu definisi di bawah ke istilah yang cocok
@@ -440,9 +491,9 @@
                                         <div class="flex items-center gap-3">
                                             <span class="w-1/3 text-sm font-bold text-gray-700 shrink-0">{{ $pair['left'] }}</span>
                                             <div class="flex-1 min-h-[46px] border-2 border-dashed rounded-xl px-3 py-2.5 flex items-center justify-between transition-all duration-200"
-                                                 :class="matches[{{ $leftIndex }}] !== undefined ? 'border-[#10B981] bg-gradient-to-r from-emerald-50 to-white shadow-sm' : 'border-gray-300 hover:border-emerald-300 hover:bg-emerald-50/30'"
-                                                 @dragover.prevent
-                                                 @drop.prevent="dropOn({{ $leftIndex }})">
+                                                 data-dropzone-qid="{{ $question->id }}"
+                                                 data-left-index="{{ $leftIndex }}"
+                                                 :class="matches[{{ $leftIndex }}] !== undefined ? 'border-[#10B981] bg-gradient-to-r from-emerald-50 to-white shadow-sm' : (hoverLeft === {{ $leftIndex }} ? 'border-[#059669] bg-emerald-100 scale-[1.02]' : 'border-gray-300')">
                                                 <span class="text-sm text-gray-700 font-medium" x-text="matches[{{ $leftIndex }}] !== undefined ? rightTextFor(matches[{{ $leftIndex }}]) : ''"></span>
                                                 <button type="button" x-show="matches[{{ $leftIndex }}] !== undefined" @click="clear({{ $leftIndex }})" class="text-[#EF4444] hover:text-[#DC2626] text-xs">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -455,12 +506,19 @@
                                 <div class="flex flex-wrap gap-2 pt-3 border-t border-emerald-100">
                                     <template x-for="item in rightItems" :key="item.index">
                                         <div x-show="!usedRightIndexes().includes(item.index)"
-                                             draggable="true"
-                                             @dragstart="dragStart(item.index)"
-                                             class="bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-100 rounded-lg px-3.5 py-2.5 text-sm text-[#059669] font-semibold cursor-move hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                                             @pointerdown="startDrag($event, item.index, item.text)"
+                                             class="bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-100 rounded-lg px-3.5 py-2.5 text-sm text-[#059669] font-semibold cursor-move select-none hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                                             :class="dragging === item.index ? 'opacity-30' : ''"
+                                             style="touch-action: none;"
                                              x-text="item.text"></div>
                                     </template>
                                 </div>
+
+                                <template x-if="dragging !== null && dragText">
+                                    <div class="fixed z-50 pointer-events-none bg-gradient-to-br from-[#059669] to-[#34D399] text-white rounded-lg px-3.5 py-2.5 text-sm font-semibold shadow-xl"
+                                         :style="`left: ${ghostX + 12}px; top: ${ghostY - 24}px;`"
+                                         x-text="dragText"></div>
+                                </template>
                             </div>
 
                         @elseif ($question->type === 'word_search')
